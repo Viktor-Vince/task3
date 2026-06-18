@@ -3,6 +3,7 @@ import allure from '@wdio/allure-reporter';
 import { TimerScreen } from '../src/screens/TimerScreen.js';
 import { timerFixtures } from '../src/fixtures/timerFixtures.js';
 import { apps } from '../config/apps.js';
+import { AppHelper } from '../src/helpers/AppHelper.js';
 
 describe('Timer', () => {
   let timer: TimerScreen;
@@ -12,9 +13,7 @@ describe('Timer', () => {
   });
 
   beforeEach(async () => {
-    await browser.execute('mobile: shell', { command: 'pm', args: ['clear', apps.clock.package] });
-    await browser.execute('mobile: activateApp', { appId: apps.clock.package });
-    await browser.pause(1000);
+    await AppHelper.clearAndOpen(apps.clock.package);
     await timer.open();
   });
 

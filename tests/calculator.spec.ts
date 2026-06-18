@@ -3,6 +3,7 @@ import allure from '@wdio/allure-reporter';
 import { CalculatorScreen } from '../src/screens/CalculatorScreen.js';
 import { calculatorFixtures } from '../src/fixtures/calculatorFixtures.js';
 import { apps } from '../config/apps.js';
+import { AppHelper } from '../src/helpers/AppHelper.js';
 
 describe('Calculator', () => {
   let calc: CalculatorScreen;
@@ -12,9 +13,7 @@ describe('Calculator', () => {
   });
 
   beforeEach(async () => {
-    await browser.execute('mobile: shell', { command: 'am', args: ['force-stop', apps.calculator.package] });
-    await browser.execute('mobile: shell', { command: 'am', args: ['start', '-n', `${apps.calculator.package}/${apps.calculator.activity}`] });
-    await browser.pause(1500);
+    await AppHelper.forceRestartActivity(apps.calculator);
   });
 
   it('TC01 - addition shows correct result in preview', async () => {
