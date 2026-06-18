@@ -90,7 +90,7 @@ Each device gets its own `wdio` process and its own Appium server on a dedicated
 ```bash
 cross-env DEVICE=lenovo_m10 npm test
 cross-env DEVICE=emulator npm test
-cross-env DEVICE=all PARALLEL=true npm test
+cross-env DEVICE=all npm test
 ```
 
 ### Allure report
@@ -115,7 +115,7 @@ npm run test:report
 |----|-------------|----------|-----------------|
 | TC01 | Addition shows correct result in preview | critical | `5 + 3` → preview shows `8` |
 | TC02 | Multiplication shows correct result in preview | critical | `6 × 7` → preview shows `42` |
-| TC03 | Pressing equals confirms the result | normal | `9 − 4 =` → formula shows `5` |
+| TC03 | Subtraction shows correct result in preview | normal | `9 − 4` → preview shows `5` |
 
 ## Project structure
 
@@ -124,6 +124,8 @@ config/
 ├── devices.ts          # device registry — hardware caps + per-device spec list
 └── apps.ts             # app package/activity definitions
 src/
+├── helpers/
+│   └── AppHelper.ts          # app lifecycle helpers (launch, reset, force-stop)
 ├── screens/
 │   ├── BaseScreen.ts         # shared waitForDisplayed / tap / getText helpers
 │   ├── TimerScreen.ts        # Timer setup screen
@@ -134,7 +136,7 @@ src/
 tests/
 ├── timer.spec.ts       # TC01–TC03 for Timer
 └── calculator.spec.ts  # TC01–TC03 for Calculator
-wdio.conf.ts            # WebdriverIO + Appium config (reads DEVICE / PARALLEL env vars)
+wdio.conf.ts            # WebdriverIO + Appium config (reads DEVICE / APPIUM_PORT env vars)
 ```
 
 ## Allure annotations
@@ -184,6 +186,7 @@ Then create `src/screens/SettingsScreen.ts` extending `BaseScreen`, reference `a
 
 ## Design patterns
 
+- **App lifecycle helper** — `AppHelper` centralises shell/lifecycle operations (`pm clear`, `am force-stop`, `am start`); specs call a single named method instead of raw `browser.execute` commands, so changing launch behaviour requires editing one place
 - **Screen Object Pattern** — selectors and actions encapsulated per screen; tests contain only orchestration
 - **Base Screen** — shared `tap`, `getText`, `waitForDisplayed` eliminate duplication across screens
 - **Device registry with per-device specs** — each profile in `config/devices.ts` declares which specs it supports; `wdio.conf.ts` passes them as capability-level `specs`, letting WebdriverIO filter automatically without any conditional logic in test code
@@ -192,4 +195,4 @@ Then create `src/screens/SettingsScreen.ts` extending `BaseScreen`, reference `a
 - **Allure annotations** — each test declares `feature`, `severity`, and `story` via `@wdio/allure-reporter`; enables filtering by priority or functional area in the Allure UI
 - **Screenshot on failure** — `afterTest` hook captures a screenshot automatically; attached to the Allure report for every failed test
 - **Retry on flakiness** — `specFileRetries: 1` reruns a failing spec file after a 3 s delay, guarding against transient Appium/device glitches; uses spec-file level (not test level) retry so `before`/`beforeEach` hooks re-execute cleanly
-- **Parallel execution** — `PARALLEL=true` sets `maxInstances` to the number of active device profiles; sequential mode is the safe default
+- **Parallel execution** — each device gets its own `wdio` process and Appium server via `npm-run-all2 run-p`; port isolation via `APPIUM_PORT` env var prevents `EADDRINUSE` conflicts; `--continue-on-error` ensures an intentional failure on one device does not kill the sibling process
